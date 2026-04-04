@@ -1,18 +1,89 @@
 # 全局规则
 
 - 始终使用中文回答
+- 本项目是气液两相流流型分析系统，专注于信号处理与机器学习分类
 
 ---
 
 # 项目概述
 
-本项目是一个数据处理与分析工具，主要包含以下模块：
+本项目是一个气液两相流流型分析系统，基于压力/压差信号进行流型识别。主要包含以下模块：
 
-- **software/** - PyQt5 GUI应用程序，用于处理多格式文件（.tdms, .csv, .xls, .xlsx）
-- **data/** - 数据处理脚本，包含PDF分析、EMD分解、样条拟合、数据合并等功能
-- **XGBoost_SHAP/** - 机器学习模块，使用XGBoost和SHAP进行分类和特征重要性分析
+- **software/** - PyQt5 GUI应用程序，用于处理多格式文件（.tdms, .csv, .xls, .xlsx），提供数据可视化、特征提取和数据集构建功能
+- **data/** - 数据处理脚本，包含PDF分析、EMD分解、样条拟合、小波包分解、时域/频域特征提取等功能
+- **XGBoost_SHAP/** - 机器学习模块，使用XGBoost和SHAP进行流型分类和特征重要性分析
 
 项目语言：Python 3.x
+
+---
+
+# 运行环境
+
+- 操作系统：Windows
+- Python环境：Anaconda，路径为 `C:/ProgramData/anaconda3/envs/graduation`
+- 项目路径：`C:/Users/31726/Desktop/graduation_project/project`
+
+---
+
+# 软件架构 (software/)
+
+## 文件结构
+
+```
+software/
+├── main.py           # 主窗口 MainWindow（约225行）
+├── data_process.py   # 数据处理窗口 DataProcessWindow（约722行）
+├── data_viewer.py    # 数据查看器 DataViewer（约138行）
+├── functions.py      # 工具函数（约128行）
+├── README.md         # 项目文档
+└── test/             # 测试文件
+```
+
+## 主要类说明
+
+### MainWindow (main.py)
+- 文件选择界面，支持多文件选择（.tdms, .csv, .xls, .xlsx）
+- 左侧面板：文件列表、数据摘要
+- 右侧面板：操作按钮（数据预览、数据处理、保存CSV、保存Excel）
+- 保存按钮放在主窗口，方便随时导出数据
+
+### DataProcessWindow (data_process.py)
+- 数据处理主界面
+- 左侧面板（固定宽度250px）：列选择、处理按钮列表
+- 右侧面板：Matplotlib图表展示
+- 功能按钮：
+  - 原始数据绘图
+  - 数据截取
+  - 概率密度分布
+  - 时域特征提取
+  - 频域特征提取
+  - 小波包分解
+  - 构建特征集
+
+### DataViewer (data_viewer.py)
+- 数据预览窗口
+- 使用QTableWidget展示DataFrame
+- 列选择功能（复选框直接在界面中，非弹窗）
+- 数据摘要显示
+
+### functions.py
+- `load_data(file_path)` - 加载数据文件，自动识别格式
+- `get_file_summary(file_path)` - 获取文件摘要信息
+
+## 构建特征集功能
+
+"构建特征集"按钮用于批量处理多个文件，生成机器学习训练数据集。
+
+### 配置选项
+- 分块大小（每块样本数）
+- 特征选择：
+  - 概率密度分布特征
+  - 时域特征（均值、标准差、最大值、最小值、峰峰值、均方根、偏度、峰度）
+  - 频域特征（主频、频谱质心、频谱熵）
+- Label值（应用于所有选中文件）
+
+### 输出格式
+输出CSV格式与 `XGBoost_SHAP/datasets/annular.csv` 一致，包含特征列和Label列。
 
 ---
 
@@ -40,7 +111,7 @@ python -m venv venv
 # Windows:
 venv\Scripts\activate
 # Linux/Mac:
-source venv/bin/activate
+source venv/Scripts/activate
 
 # 安装依赖
 pip install -r requirements.txt
@@ -572,17 +643,26 @@ plt.rcParams["axes.unicode_minus"] = False
 project/
 ├── AGENTS.md                 # 本文件
 ├── software/                 # GUI 应用程序
-│   ├── main.py              # 主窗口
-│   └── functions.py          # 功能函数
+│   ├── main.py              # 主窗口（MainWindow）
+│   ├── data_process.py      # 数据处理窗口（DataProcessWindow）
+│   ├── data_viewer.py       # 数据查看器（DataViewer）
+│   ├── functions.py          # 功能函数
+│   ├── README.md            # 项目文档
+│   └── test/                # 测试文件
 ├── data/                    # 数据处理脚本
 │   ├── pdf.py               # PDF 分析
 │   ├── emd.py               # EMD 分解
 │   ├── merge_data.py        # 数据合并
+│   ├── waveleta_packet.py   # 小波包分解
+│   ├── feature extraction.py # 特征提取参考
 │   ├── test.py              # 测试脚本
 │   └── *.csv                # 数据文件
 └── XGBoost_SHAP/            # 机器学习模块
     ├── test.py              # 测试脚本
+    ├── datasets_switch.py   # 特征集构建参考
     └── datasets/            # 数据集
+        ├── annular.csv      # 目标输出格式
+        └── ...
 ```
 
 ---
@@ -599,10 +679,15 @@ project/
 
 ---
 
-# 注意事项
+# 重要注意事项
 
 1. **始终使用中文回答**（已在全局规则中定义）
-2. 修改代码前先阅读理解现有逻辑
-3. 新增功能建议添加文档字符串和注释
-4. 提交代码前运行基本测试确保功能正常
-5. 遇到问题优先查看报错信息，再搜索解决方案
+2. **只能修改 software/ 目录下的文件**，不要修改 data/ 和 XGBoost_SHAP/ 目录
+3. 修改代码前先阅读理解现有逻辑
+4. 新增功能建议添加文档字符串和注释
+5. 提交代码前运行基本测试确保功能正常
+6. 遇到问题优先查看报错信息，再搜索解决方案
+7. 读取 Excel 文件必须使用 `pd.read_excel()`，不能使用 `pd.read_csv()`
+8. 特征提取实现参考 `data/feature extraction.py` 和 `data/waveleta_packet.py`
+9. 输出特征集格式参考 `XGBoost_SHAP/datasets/annular.csv`
+10. Label值应用于所有选中文件（用户只需输入一次）
