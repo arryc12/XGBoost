@@ -13,11 +13,11 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
-# 导入功能函数模块
-import functions
-# 导入子窗口模块
-from data_viewer import DataViewer
-from data_process import DataProcessWindow
+# 导入处理器模块
+from handlers.io_handler import load_data, save_data, get_file_summary
+# 导入UI子模块
+from ui.data_viewer import DataViewer
+from ui.data_process import DataProcessWindow
 
 
 class MainWindow(QMainWindow):
@@ -80,13 +80,12 @@ class MainWindow(QMainWindow):
 
     def select_files(self):
         """打开文件对话框，选择多个文件"""
-        # 定义文件过滤器
         filter = "数据文件 (*.tdms *.csv *.xls *.xlsx);;所有文件 (*.*)"
         files, _ = QFileDialog.getOpenFileNames(
             self, "选择文件", "", filter
         )
         if files:
-            self.file_paths.extend(files)  # 追加到列表
+            self.file_paths.extend(files)
             self.update_file_list()
 
     def update_file_list(self):
@@ -103,23 +102,18 @@ class MainWindow(QMainWindow):
 
     def process_files(self):
         """调用功能函数处理选中的文件（或全部）"""
-        # 如果列表中有选中的项，则只处理选中的文件；否则处理全部
         selected_items = self.file_list.selectedItems()
         if selected_items:
-            # 获取选中项的路径
             paths = [item.text() for item in selected_items]
         else:
-            # 没有选中项则处理所有文件
             paths = self.file_paths
 
         if not paths:
             QMessageBox.warning(self, "警告", "请先选择文件！")
             return
 
-        # 调用功能函数处理文件
         try:
-            results = functions.process_files(paths)
-            # 显示结果
+            results = [get_file_summary(p) for p in paths]
             self.result_text.clear()
             self.result_text.append("处理结果：\n" + "\n".join(results))
         except Exception as e:
@@ -127,7 +121,6 @@ class MainWindow(QMainWindow):
     
     def show_data(self):
         """打开新窗口显示选中文件的数据"""
-        # 确定要显示的文件：优先选中的文件，否则全部
         selected_items = self.file_list.selectedItems()
         if selected_items:
             paths = [item.text() for item in selected_items]
@@ -138,15 +131,13 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "警告", "请先选择文件！")
             return
 
-        # 每次只显示第一个文件的数据（可扩展为多标签页）
         file_path = paths[0]
         try:
-            data = functions.load_data(file_path)  # 调用新功能函数
+            data = load_data(file_path)
         except Exception as e:
             QMessageBox.critical(self, "错误", f"读取数据失败：{str(e)}")
             return
 
-        # 创建并显示新窗口
         self.data_viewer = DataViewer(data, file_path, self)
         self.data_viewer.show()
 
@@ -172,10 +163,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "警告", "请先选择文件！")
             return
         
-        # 读取第一个选中的文件
         file_path = selected_items[0].text()
         try:
-            data = functions.load_data(file_path)
+            data = load_data(file_path)
         except Exception as e:
             QMessageBox.critical(self, "错误", f"读取数据失败：{str(e)}")
             return
@@ -186,7 +176,7 @@ class MainWindow(QMainWindow):
         )
         if save_path:
             try:
-                functions.save_data(data, save_path)
+                save_data(data, save_path)
                 QMessageBox.information(self, "成功", "CSV文件保存成功！")
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"保存失败：{str(e)}")
@@ -198,10 +188,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "警告", "请先选择文件！")
             return
         
-        # 读取第一个选中的文件
         file_path = selected_items[0].text()
         try:
-            data = functions.load_data(file_path)
+            data = load_data(file_path)
         except Exception as e:
             QMessageBox.critical(self, "错误", f"读取数据失败：{str(e)}")
             return
@@ -212,7 +201,7 @@ class MainWindow(QMainWindow):
         )
         if save_path:
             try:
-                functions.save_data(data, save_path)
+                save_data(data, save_path)
                 QMessageBox.information(self, "成功", "Excel文件保存成功！")
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"保存失败：{str(e)}")

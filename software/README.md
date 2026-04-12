@@ -1,15 +1,50 @@
-# Software 模块说明文档
+# 气液两相流流型分析系统 - Software 模块
 
 ## 项目结构
 
 ```
 software/
-├── main.py           # 应用程序入口 + MainWindow类
-├── data_viewer.py    # 数据预览窗口类
-├── data_process.py   # 数据处理窗口类
-├── functions.py      # 功能函数模块
-└── test/             # 测试目录
+├── __init__.py           # 模块入口
+├── app.py                # 应用入口
+├── config/               # 配置文件目录
+├── resource/             # 资源文件目录
+├── handlers/             # 处理器模块（业务逻辑）
+│   ├── __init__.py
+│   ├── io_handler.py     # 数据 IO（读取/保存文件）
+│   ├── data_handler.py   # 数据处理（概率密度分析/保存）
+│   ├── feature_handler.py # 特征提取（时域/频域/数据集构建）
+│   └── ml_handler.py    # 机器学习处理
+├── ui/                   # UI 组件（界面逻辑）
+│   ├── __init__.py
+│   ├── main_window.py    # 主窗口 MainWindow
+│   ├── data_viewer.py   # 数据查看器 DataViewer
+│   └── data_process.py  # 数据处理窗口 DataProcessWindow
+├── test/                 # 测试文件
+└── README.md             # 项目文档
 ```
+
+## 模块说明
+
+### handlers/ - 处理器模块
+
+负责所有业务逻辑，与界面解耦。
+
+| 模块 | 功能 |
+|------|------|
+| `io_handler.py` | 数据读写，支持 .tdms, .csv, .xls, .xlsx 格式 |
+| `data_handler.py` | 概率密度分析、数据保存 |
+| `feature_handler.py` | 时域/频域特征提取、特征集构建 |
+| `ml_handler.py` | 机器学习相关处理 |
+
+### ui/ - UI 组件
+
+负责界面展示和用户交互。
+
+| 组件 | 功能 |
+|------|------|
+| `main_window.py` | 主窗口，文件选择、操作按钮 |
+| `data_viewer.py` | 数据预览，表格展示、图表绘制 |
+| `data_process.py` | 数据处理，特征提取、特征集构建 |
 
 ## 功能说明
 
@@ -34,7 +69,7 @@ software/
 
 ```bash
 cd software
-python main.py
+python app.py
 ```
 
 ## 依赖库
@@ -45,20 +80,14 @@ pip install pandas numpy scipy pywt PyQt5 matplotlib seaborn openpyxl nptdms
 
 ## 更新记录
 
-### Excel读取修复
-- 使用`functions.load_data()`自动识别文件格式
-- 支持.csv、.xlsx、.xls、.tdms格式
+### 架构重构 (2026)
+- 采用模块化架构，将业务逻辑与界面分离
+- handlers/ 目录：包含所有数据处理逻辑
+- ui/ 目录：包含所有界面组件
+- 统一的 app.py 入口
 
-### 界面优化
-- 数据处理界面左侧固定宽度250px
-- 数据预览界面列选择直接显示，无需弹窗
-
-### 时域特征标注
-- 参照feature extraction.py方式
-- 均值（红）、标准差（绿）、最大值（蓝）、最小值（紫）
-
-### 构建特征集
+### 特征提取功能
 - 可选概率密度特征：众数、均值、中位数、方差、标准差、偏度、峰度
 - 可选时域特征：均方根值、峰峰值、脉冲因子、裕度因子、波形因子
 - 可选频域特征：主频率、总功率、功率比、小波包能量熵
-- 输出格式与XGBoost_SHAP/datasets/annular.csv一致
+- 输出格式与 XGBoost_SHAP/datasets/annular.csv 一致
