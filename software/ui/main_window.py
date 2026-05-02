@@ -1,20 +1,33 @@
 """
 主窗口模块，构建GUI界面并响应用户操作。
 """
+
 import os
 import sys
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                             QHBoxLayout, QPushButton, QListWidget, QTextEdit,
-                             QFileDialog, QMessageBox)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QListWidget,
+    QTextEdit,
+    QFileDialog,
+    QMessageBox,
+)
 from PyQt5.QtCore import Qt
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
-plt.rcParams['axes.unicode_minus'] = False
+
+plt.rcParams["font.sans-serif"] = ["SimHei", "DejaVu Sans"]
+plt.rcParams["axes.unicode_minus"] = False
 
 # 导入处理器模块
 from handlers.io_handler import load_data, save_data, get_file_summary
+
 # 导入UI子模块
 from ui.data_viewer import DataViewer
 from ui.data_process import DataProcessWindow
@@ -22,6 +35,7 @@ from ui.data_process import DataProcessWindow
 
 class MainWindow(QMainWindow):
     """主窗口类"""
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("气液两相流流型分析")
@@ -57,7 +71,7 @@ class MainWindow(QMainWindow):
 
         # 右侧布局（上下）
         right_layout = QVBoxLayout()
-        
+
         # 文件列表部件
         self.file_list = QListWidget()
         self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
@@ -67,7 +81,7 @@ class MainWindow(QMainWindow):
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
         right_layout.addWidget(self.result_text)
-        
+
         main_layout.addLayout(right_layout)
 
         # 连接信号与槽
@@ -81,9 +95,7 @@ class MainWindow(QMainWindow):
     def select_files(self):
         """打开文件对话框，选择多个文件"""
         filter = "数据文件 (*.tdms *.csv *.xls *.xlsx);;所有文件 (*.*)"
-        files, _ = QFileDialog.getOpenFileNames(
-            self, "选择文件", "", filter
-        )
+        files, _ = QFileDialog.getOpenFileNames(self, "选择文件", "", filter)
         if files:
             self.file_paths.extend(files)
             self.update_file_list()
@@ -118,9 +130,9 @@ class MainWindow(QMainWindow):
             self.result_text.append("处理结果：\n" + "\n".join(results))
         except Exception as e:
             QMessageBox.critical(self, "错误", f"处理过程中发生异常：{str(e)}")
-    
+
     def show_data(self):
-        """打开新窗口显示选中文件的数据"""
+        """打开新窗口显示选中文件的数据（支持多文件）"""
         selected_items = self.file_list.selectedItems()
         if selected_items:
             paths = [item.text() for item in selected_items]
@@ -131,14 +143,24 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "警告", "请先选择文件！")
             return
 
-        file_path = paths[0]
-        try:
-            data = load_data(file_path)
-        except Exception as e:
-            QMessageBox.critical(self, "错误", f"读取数据失败：{str(e)}")
+        # 加载所有选中文件的数据
+        data_dict = {}
+        for file_path in paths:
+            try:
+                data = load_data(file_path)
+                data_dict[file_path] = data
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "警告",
+                    f"读取文件失败: {os.path.basename(file_path)}\n{str(e)}",
+                )
+
+        if not data_dict:
+            QMessageBox.critical(self, "错误", "所有文件读取失败！")
             return
 
-        self.data_viewer = DataViewer(data, file_path, self)
+        self.data_viewer = DataViewer(data_dict, self)
         self.data_viewer.show()
 
     def open_data_process(self):
@@ -162,14 +184,14 @@ class MainWindow(QMainWindow):
         if not selected_items:
             QMessageBox.warning(self, "警告", "请先选择文件！")
             return
-        
+
         file_path = selected_items[0].text()
         try:
             data = load_data(file_path)
         except Exception as e:
             QMessageBox.critical(self, "错误", f"读取数据失败：{str(e)}")
             return
-        
+
         default_name = os.path.splitext(os.path.basename(file_path))[0] + "_export.csv"
         save_path, _ = QFileDialog.getSaveFileName(
             self, "保存为CSV", default_name, "CSV文件 (*.csv)"
@@ -187,14 +209,14 @@ class MainWindow(QMainWindow):
         if not selected_items:
             QMessageBox.warning(self, "警告", "请先选择文件！")
             return
-        
+
         file_path = selected_items[0].text()
         try:
             data = load_data(file_path)
         except Exception as e:
             QMessageBox.critical(self, "错误", f"读取数据失败：{str(e)}")
             return
-        
+
         default_name = os.path.splitext(os.path.basename(file_path))[0] + "_export.xlsx"
         save_path, _ = QFileDialog.getSaveFileName(
             self, "保存为Excel", default_name, "Excel文件 (*.xlsx)"
